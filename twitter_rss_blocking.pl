@@ -1,6 +1,5 @@
 #!/usr/bin/env perl
 use Mojolicious::Lite;
-use Data::Dumper;
 use POSIX qw(strftime);
 
 use Mojo::Collection;
