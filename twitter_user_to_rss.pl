@@ -28,6 +28,34 @@ helper heavy_users => sub {
   return $users;
 };
 
+helper parse_tweet => sub {
+  my ($self, $dom) = @_;
+
+  my $body = $dom->at('p.tweet-text')->content_xml;
+  $body = "<![CDATA[$body]]>";
+
+  my $header    = $dom->at('div.stream-item-header');
+  my $avatar    = $header->at('a img.avatar')->{src};
+  my $fullname  = $header->at('.fullname')->all_text;
+  my $username  = '@' . $header->at('.username b')->text;
+  my $ts        = $header->at('.tweet-timestamp');
+  my $uri       = $self->base_url->path( $ts->{href} );
+  my $timestamp = $ts->at('[data-time]')->{'data-time'};
+
+  my $pub_date = strftime("%a, %d %b %Y %H:%M:%S %z", localtime($timestamp));
+
+  return {
+    username    => $username,
+    fullname    => $fullname,
+    link        => $uri,
+    guid        => $uri,
+    title       => "$username: $body",
+    description => $body,
+    timestamp   => $timestamp,
+    pubDate     => $pub_date,
+  }
+};
+
 any '/' => sub { shift->render_static( 'index.html' ) };
 
 get '/twitter_user_to_rss' => sub {
@@ -50,7 +78,10 @@ get '/twitter_user_to_rss' => sub {
     return $self->render_exception(scalar $tx->error);
   }
 
-  $self->render( text => 'So far, so good' );
+  my $tweets = $tx->res->dom('li.js-stream-item > div');
+  my $data   = $tweets->map(sub{$self->parse_tweet($_)});  
+
+  $self->render( text => $self->dumper($data) );
 };
 
 app->start;
