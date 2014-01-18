@@ -1,55 +1,63 @@
-#!/usr/bin/perl
-use strict;
-use warnings;
-use utf8;
-use 5.10.0;
+#!/usr/bin/env perl
+use Mojolicious::Lite;
 use Data::Dumper;
-use Readonly;
-use HTML::TreeBuilder::XPath;
-use LWP::Simple;
-use CGI::Fast;
 use POSIX qw(strftime);
 
-binmode STDOUT, 'utf8';
+use Mojo::Collection;
+use Mojo::URL;
 
-Readonly my $BASEURL => 'https://twitter.com';
+app->secrets(['This secret protects things and should be changed']);
 
+helper base_url => sub { state $base = Mojo::URL->new('https://twitter.com'); $base->clone };
+helper user_url => sub { 
+  my ($self, $user, $replies) = @_;
+  my $url = $self->base_url->path($user);
+  push @{$url->path->parts}, 'with_replies' if $replies;
+  return $url;
+};
 
-while (my $q = CGI::Fast->new) {
-	my $user = $q->param('user') || 'ciderpunx';
+helper heavy_users => sub {
+  my ($self, $reload) = @_;
+  state $users;
 
-	$user = lc $user;
-	# die if $user eq 'KaleTicaret1979' || $user eq 'pastasanati' || $user eq 'weightloss';
-	die if $user =~ '^#';
+  unless ($users or $reload) {
+	  open my $in, '<', 'heavy_users' or die 'No heavy_users file';
+    $users = Mojo::Collection->new(<$in>);
+  }
+
+  return $users;
+};
+
+any '/' => sub { shift->render_static( 'index.html' ) };
+
+get '/twitter_user_to_rss' => sub {
+  my $self = shift;
+  my $user = lc $self->param('user') || 'ciderpunx';
+  my $replies = $self->param('replies') || 0;
+
+  $self->render_not_found if $user =~ '^#';
 
 	$user=~s/(@|\s)//g;
 	$user=~s/%40//g;
 
-	my $max_age=1800;
+  my $max_age = $self->heavy_users->first($user) ? 86400 : 1800;
+  my $url = $self->user_url($user, $replies);
 
-	open my $in, '<', 'heavy_users' or die 'No heavy_users file';
-	my @heavy_users = <$in>;
-	close $in;
+  $self->app->log->info($user);
 
-	$max_age = '86400' if grep {/$user/} @heavy_users; 
+  my $tx = $self->ua->get($url);
+  unless ($tx->success) { 
+    return $self->render_exception(scalar $tx->error);
+  }
 
-	my $replies = $q->param('replies') || 0;
+  $self->render( text => 'So far, so good' );
+};
 
-	my $url = "$BASEURL/$user";
-	$url .= "/with_replies" if $replies;
+app->start;
 
+__END__
 
-
-	open my $out, '>>', 'twitter_rss_uses' or die 'No twitter rss uses file';
-	print $out (localtime time) . " $user\n";
-	close $out;
-
-	my $content = get("$BASEURL/$user");
-	unless (defined $content) {
-		err('Can&#8217;t screenscrape Twitter');
-		next;
-	}
-
+while (my $q = CGI::Fast->new) {
 
 	my @items;
 
