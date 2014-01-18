@@ -81,7 +81,7 @@ get '/twitter_user_to_rss' => sub {
   my $tweets = $tx->res->dom('li.js-stream-item > div');
   my $items  = $tweets->map(sub{$self->parse_tweet($_)});  
 
-  # Cache-control: max-age=$max_age
+  $self->res->headers->cache_control("max-age=$max_age");
   $self->render( 'atom', format => 'rss', user => $user, items => $items );
 };
 
