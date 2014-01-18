@@ -64,8 +64,8 @@ get '/twitter_user_to_rss' => sub {
 
   $self->render_not_found if $user =~ '^#';
 
-	$user=~s/(@|\s)//g;
-	$user=~s/%40//g;
+  $user=~s/(@|\s)//g;
+  $user=~s/%40//g;
 
   my $max_age = $self->heavy_users->first($user) ? 86400 : 1800;
   my $url = $self->user_url($user, $replies);
