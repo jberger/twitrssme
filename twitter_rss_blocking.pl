@@ -19,7 +19,7 @@ helper heavy_users => sub {
   my ($self, $reload) = @_;
   state $users;
 
-  unless ($users or $reload) {
+  if (!$users or $reload) {
     open my $in, '<', 'heavy_users' or die 'No heavy_users file';
     $users = Mojo::Collection->new(<$in>);
   }
