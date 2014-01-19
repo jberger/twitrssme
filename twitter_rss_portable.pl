@@ -96,29 +96,4 @@ get '/twitter_user_to_rss' => sub {
 
 app->start;
 
-__DATA__
-
-@@ atom.rss.ep
-
-<?xml version="1.0" encoding="UTF-8"?>
-<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:georss="http://www.georss.org/georss" xmlns:twitter="http://api.twitter.com" version="2.0">
-  <channel>
-    <title>Twitter Search / <%== $user %></title>
-    <link>http://twitter.com/<%== $user %></link>
-    <description>Twitter feed for: <%== $user %>.</description>
-    <language>en-us</language>
-    <ttl>40</ttl>
-    % for (@$items) {
-      <item>
-        <title><%== $_->{title} %></title>
-        <description><%== $_->{description}%></description>
-        <pubDate><%== $_->{pubDate}%></pubDate>
-        <guid><%== $_->{guid}%></guid>
-        <link><%== $_->{link}%></link>
-        <twitter:source/>
-        <twitter:place/>
-      </item>
-    % }
-  </channel>
-</rss>      
 
