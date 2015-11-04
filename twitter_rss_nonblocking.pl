@@ -76,7 +76,7 @@ get '/twitter_user_to_rss' => sub {
   my $tx = $self->ua->get($url, sub {
     my ($ua, $tx) = @_;
     unless ($tx->success) { 
-      return $self->render_exception(scalar $tx->error);
+      return $self->reply->exception(scalar $tx->error);
     }
 
     my $tweets = $tx->res->dom('li.js-stream-item .tweet .content');
