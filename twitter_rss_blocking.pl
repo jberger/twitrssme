@@ -30,7 +30,7 @@ helper heavy_users => sub {
 helper parse_tweet => sub {
   my ($self, $dom) = @_;
 
-  my $body = $dom->at('p.tweet-text')->content_xml;
+  my $body = $dom->at('p.tweet-text')->content;
   $body = "<![CDATA[$body]]>";
 
   my $header    = $dom->at('div.stream-item-header');
@@ -55,7 +55,7 @@ helper parse_tweet => sub {
   }
 };
 
-any '/' => sub { shift->render_static( 'index.html' ) };
+any '/' => sub { shift->reply->static( 'index.html' ) };
 
 get '/twitter_user_to_rss' => sub {
   my $self = shift;
@@ -74,7 +74,7 @@ get '/twitter_user_to_rss' => sub {
 
   my $tx = $self->ua->get($url);
   unless ($tx->success) { 
-    return $self->render_exception(scalar $tx->error);
+    return $self->reply->exception(scalar $tx->error);
   }
 
   my $tweets = $tx->res->dom('li.js-stream-item .tweet .content');
